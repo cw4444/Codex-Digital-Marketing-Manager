@@ -198,6 +198,9 @@ const elements = {
   greenFlagsList: document.getElementById("greenFlagsList"),
   leverageList: document.getElementById("leverageList"),
   pressureList: document.getElementById("pressureList"),
+  aiAssistList: document.getElementById("aiAssistList"),
+  humanOversightList: document.getElementById("humanOversightList"),
+  teamLoadList: document.getElementById("teamLoadList"),
   matchHighlightsList: document.getElementById("matchHighlightsList"),
   matchGapsList: document.getElementById("matchGapsList"),
   hallWorstValue: document.getElementById("hallWorstValue"),
@@ -693,6 +696,83 @@ function buildPlainEnglishSummary(roleTitle, verdict, salaryText, responsibiliti
   return `${roleTitle} is pitched as a growth opportunity, but the ad mostly reads like a broad operational role ${salaryLine}. It expects one person to juggle ${scope}, with ${collaboration}, and the overall vibe is ${verdict.label.toLowerCase()}.`;
 }
 
+function classifyAutomationLoad(responsibilities, requirements, stakeholders) {
+  const aiAssist = [];
+  const humanOversight = [];
+  const teamLoad = [];
+
+  const aiPatterns = [
+    { pattern: /report|reporting|insight|analysis|analytics|kpis/i, label: "Reporting, summaries, and first-pass analysis are increasingly AI-accelerated rather than fully manual work." },
+    { pattern: /brief|user stories|acceptance criteria/i, label: "Brief drafting and first-pass requirement shaping can be sped up heavily with AI assistance." },
+    { pattern: /landing pages|content|campaigns|copy|merchandising/i, label: "Content variants, campaign support, and merchandising drafts are all areas where AI can do a lot of the grunt work." },
+    { pattern: /cms|updates|processes|documentation/i, label: "Routine CMS updates, documentation, and repeatable process admin are obvious AI-plus-automation territory." },
+    { pattern: /customer journeys|map |testing|optimise|optimize/i, label: "Journey mapping, testing ideas, and optimisation hypotheses can be generated quickly with AI as a co-pilot." },
+  ];
+
+  const humanPatterns = [
+    { pattern: /stakeholders|collaborate|relationships|communicate|slas/i, label: "Stakeholder alignment, expectation setting, and cross-team trust still need a human in the loop." },
+    { pattern: /prioritise|prioritize|priorities|objectives/i, label: "Prioritisation against business goals is judgment work, not something you should outsource blindly to AI." },
+    { pattern: /measure impact|solutions|identify gaps|weak spots/i, label: "Choosing what matters and what action to take next needs human judgment and accountability." },
+    { pattern: /lead|own |responsible/i, label: "Ownership language means someone human is still on the hook when tradeoffs, politics, or risk show up." },
+    { pattern: /product|development|finance|legal|ux|ppc|seo/i, label: "Anything crossing multiple disciplines still needs human oversight because the failure modes are social and organisational, not just technical." },
+  ];
+
+  const teamSignals = [
+    { pattern: /seo/i, label: "SEO specialist work is showing up inside the role." },
+    { pattern: /ppc/i, label: "Paid media or landing page performance work is showing up inside the role." },
+    { pattern: /crm/i, label: "CRM or lifecycle responsibilities are present." },
+    { pattern: /content|campaigns|creative/i, label: "Content or creative production expectations are present." },
+    { pattern: /ux|customer journeys|cro/i, label: "UX or CRO responsibilities are present." },
+    { pattern: /product|development|user stories|acceptance criteria/i, label: "Product or delivery-manager style work is present." },
+    { pattern: /analytics|data|kpis|reporting/i, label: "Analyst-style measurement and reporting work is present." },
+    { pattern: /processes|slas|prioritise|stakeholders/i, label: "Operations or project-coordination work is present." },
+  ];
+
+  const sourceLines = [...responsibilities, ...requirements];
+
+  sourceLines.forEach((line) => {
+    aiPatterns.forEach((rule) => {
+      if (rule.pattern.test(line)) {
+        aiAssist.push(rule.label);
+      }
+    });
+
+    humanPatterns.forEach((rule) => {
+      if (rule.pattern.test(line)) {
+        humanOversight.push(rule.label);
+      }
+    });
+  });
+
+  sourceLines.forEach((line) => {
+    teamSignals.forEach((rule) => {
+      if (rule.pattern.test(line)) {
+        teamLoad.push(rule.label);
+      }
+    });
+  });
+
+  if (stakeholders.length >= 6) {
+    humanOversight.push("Because the role names many stakeholders, the hard part is likely coordination and tradeoff handling rather than raw task execution.");
+  }
+
+  const uniqueTeamLoad = unique(teamLoad);
+  const uniqueAiAssist = unique(aiAssist);
+  const uniqueHumanOversight = unique(humanOversight);
+
+  const overloadSummary = [];
+  if (uniqueTeamLoad.length >= 5) {
+    overloadSummary.push(`This ad looks like at least ${Math.min(uniqueTeamLoad.length, 5)} job families compressed into one seat.`);
+  }
+  overloadSummary.push(...uniqueTeamLoad);
+
+  return {
+    aiAssist: uniqueAiAssist.length ? uniqueAiAssist : ["No obvious AI-assist bucket was detected, though first drafts and admin work are still likely automatable."],
+    humanOversight: uniqueHumanOversight.length ? uniqueHumanOversight : ["No obvious human-critical signals were detected, but accountability and prioritisation still need a person."],
+    teamLoad: overloadSummary.length ? overloadSummary : ["No obvious multi-role overload pattern was detected."],
+  };
+}
+
 function splitHallEntries(text) {
   return text
     .split(/\n\s*---\s*\n/g)
@@ -807,6 +887,7 @@ function analyzeSpec(text) {
   const benefitsCount = countBenefits(normalizedText);
   const buzzwords = detectBuzzwords(normalizedText);
   const suspicionTriggers = detectSuspicionTriggers(normalizedText, salaryNumber);
+  const automationLoad = classifyAutomationLoad(responsibilities, requirements, stakeholders);
   const scoring = scoreJobSpec({
     salaryNumber,
     responsibilities,
@@ -856,6 +937,7 @@ function analyzeSpec(text) {
       responsibilities,
     }),
     pressurePoints: buildPressurePoints(responsibilities, stakeholders, buzzwords),
+    automationLoad,
     sourceStats: {
       lines: lines.length,
       words: normalizedText.split(/\s+/).filter(Boolean).length,
@@ -978,6 +1060,9 @@ function renderAnalysis(analysis, cvMatch) {
   renderList(elements.greenFlagsList, analysis.greenFlags, "No standout positives were detected.");
   renderList(elements.leverageList, analysis.leveragePoints);
   renderList(elements.pressureList, analysis.pressurePoints);
+  renderList(elements.aiAssistList, analysis.automationLoad.aiAssist);
+  renderList(elements.humanOversightList, analysis.automationLoad.humanOversight);
+  renderList(elements.teamLoadList, analysis.automationLoad.teamLoad);
   renderList(elements.matchHighlightsList, cvMatch.highlights);
   renderList(elements.matchGapsList, cvMatch.gaps);
   elements.summaryBody.textContent = analysis.plainEnglishSummary;
@@ -1015,6 +1100,9 @@ function resetAnalysis() {
   renderList(elements.greenFlagsList, []);
   renderList(elements.leverageList, []);
   renderList(elements.pressureList, []);
+  renderList(elements.aiAssistList, []);
+  renderList(elements.humanOversightList, []);
+  renderList(elements.teamLoadList, []);
   renderList(elements.matchHighlightsList, []);
   renderList(elements.matchGapsList, []);
   renderHallOfShame({
