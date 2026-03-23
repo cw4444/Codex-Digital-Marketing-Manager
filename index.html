@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JobSpec Studio</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Job spec experiment</p>
+          <h1>Turn a raw job description into something you can actually use.</h1>
+          <p class="hero-text">
+            Paste any job spec and the app will break it into a structured brief,
+            core responsibilities, skills, hiring signals, and interview or
+            application prompts.
+          </p>
+        </div>
+        <div class="hero-card">
+          <p class="hero-card-label">Built for this workspace</p>
+          <ul class="hero-card-list">
+            <li>Preloaded with your sample spec</li>
+            <li>Runs fully in the browser</li>
+            <li>Exports structured JSON</li>
+          </ul>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <section class="panel input-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="panel-label">Input</p>
+              <h2>Job spec</h2>
+            </div>
+            <div class="panel-actions">
+              <button id="analyzeBtn" class="button button-primary">Analyze spec</button>
+              <button id="clearBtn" class="button button-secondary">Clear</button>
+            </div>
+          </div>
+
+          <label class="field-label" for="jobSpecInput">Paste or edit a job description</label>
+          <textarea id="jobSpecInput" spellcheck="false"></textarea>
+
+          <div class="utility-row">
+            <div class="stat-pill">
+              <span class="stat-value" id="wordCount">0</span>
+              <span class="stat-label">words</span>
+            </div>
+            <button id="copyJsonBtn" class="button button-ghost">Copy JSON</button>
+          </div>
+        </section>
+
+        <section class="panel output-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="panel-label">Output</p>
+              <h2>Structured role brief</h2>
+            </div>
+            <p id="statusText" class="status-text">Ready to analyze</p>
+          </div>
+
+          <div class="summary-grid">
+            <article class="summary-card accent-card">
+              <p class="summary-label">Role</p>
+              <h3 id="roleTitle">Not detected yet</h3>
+              <p id="roleMeta" class="muted-text">Paste a spec to extract details.</p>
+            </article>
+
+            <article class="summary-card">
+              <p class="summary-label">Snapshot</p>
+              <dl class="meta-list">
+                <div>
+                  <dt>Salary</dt>
+                  <dd id="salaryValue">-</dd>
+                </div>
+                <div>
+                  <dt>Location</dt>
+                  <dd id="locationValue">-</dd>
+                </div>
+                <div>
+                  <dt>Experience</dt>
+                  <dd id="experienceValue">-</dd>
+                </div>
+                <div>
+                  <dt>Working style</dt>
+                  <dd id="workingStyleValue">-</dd>
+                </div>
+              </dl>
+            </article>
+          </div>
+
+          <div class="content-grid">
+            <article class="content-card">
+              <div class="content-header">
+                <h3>Responsibilities</h3>
+                <span id="responsibilityCount" class="count-badge">0</span>
+              </div>
+              <ul id="responsibilitiesList" class="bullet-list"></ul>
+            </article>
+
+            <article class="content-card">
+              <div class="content-header">
+                <h3>Requirements</h3>
+                <span id="requirementsCount" class="count-badge">0</span>
+              </div>
+              <ul id="requirementsList" class="bullet-list"></ul>
+            </article>
+
+            <article class="content-card">
+              <div class="content-header">
+                <h3>Keywords</h3>
+              </div>
+              <div id="keywordsList" class="tag-list"></div>
+            </article>
+
+            <article class="content-card">
+              <div class="content-header">
+                <h3>Stakeholders</h3>
+              </div>
+              <div id="stakeholdersList" class="tag-list"></div>
+            </article>
+
+            <article class="content-card">
+              <div class="content-header">
+                <h3>Interview prompts</h3>
+              </div>
+              <ol id="questionsList" class="number-list"></ol>
+            </article>
+
+            <article class="content-card">
+              <div class="content-header">
+                <h3>Application talking points</h3>
+              </div>
+              <ul id="talkingPointsList" class="bullet-list"></ul>
+            </article>
+          </div>
+
+          <article class="panel json-panel">
+            <div class="content-header">
+              <h3>Structured JSON</h3>
+            </div>
+            <pre id="jsonOutput"></pre>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
