@@ -37,6 +37,7 @@
             </div>
             <div class="panel-actions">
               <button id="analyzeBtn" class="button button-primary">Audit and match</button>
+              <button id="hallOfShameBtn" class="button button-secondary">Run Hall of Shame</button>
               <button id="clearBtn" class="button button-secondary">Clear</button>
             </div>
           </div>
@@ -47,6 +48,10 @@
           <label class="field-label secondary-label" for="cvInput">Paste your CV, profile, or rough experience notes</label>
           <textarea id="cvInput" class="cv-input" spellcheck="false"></textarea>
 
+          <label class="field-label secondary-label" for="hallInput">Paste multiple job ads for Hall of Shame mode</label>
+          <p class="helper-text">Separate each ad with a line containing only <code>---</code>.</p>
+          <textarea id="hallInput" class="hall-input" spellcheck="false"></textarea>
+
           <div class="utility-row">
             <div class="stat-row">
               <div class="stat-pill">
@@ -56,6 +61,10 @@
               <div class="stat-pill">
                 <span class="stat-value" id="cvWordCount">0</span>
                 <span class="stat-label">cv words</span>
+              </div>
+              <div class="stat-pill">
+                <span class="stat-value" id="hallCount">0</span>
+                <span class="stat-label">hall ads</span>
               </div>
             </div>
             <button id="copyJsonBtn" class="button button-ghost">Copy JSON</button>
@@ -106,6 +115,27 @@
           </div>
 
           <div class="content-grid">
+            <article class="content-card wide-card hall-card">
+              <div class="content-header">
+                <h3>Hall of Shame leaderboard</h3>
+              </div>
+              <div class="hall-summary">
+                <article class="metric-card compact-metric">
+                  <p class="metric-label">Worst score</p>
+                  <p class="metric-value" id="hallWorstValue">-</p>
+                </article>
+                <article class="metric-card compact-metric">
+                  <p class="metric-label">Average score</p>
+                  <p class="metric-value" id="hallAverageValue">-</p>
+                </article>
+                <article class="metric-card compact-metric">
+                  <p class="metric-label">Competitive salary traps</p>
+                  <p class="metric-value" id="hallCompetitiveValue">-</p>
+                </article>
+              </div>
+              <ol id="hallRankingList" class="hall-ranking"></ol>
+            </article>
+
             <article class="content-card wide-card">
               <div class="content-header">
                 <h3>Plain-English summary</h3>

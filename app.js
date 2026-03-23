@@ -40,6 +40,30 @@ Comfortable using GA4, Looker Studio, Excel, CMS platforms, briefing requirement
 
 Managed campaign launches, category pages, and trading updates for retail sites while balancing stakeholder requests and performance goals.`;
 
+const SAMPLE_HALL = `Digital Marketing Executive
+
+Join our fast-paced family business. We offer a competitive salary and a great culture.
+
+You will manage email, social, paid media, website updates, reporting, CRM, events, content, design briefs and campaign planning.
+
+Minimum 3 years of experience required.
+---
+CRM Manager
+
+Salary £45,000. Hybrid working. Bonus and pension included.
+
+Own lifecycle strategy, reporting, testing roadmap, segmentation, automation, and stakeholder management across product and commercial teams.
+
+Experience with CRM platforms, analytics and experimentation required.
+---
+Ecommerce Manager
+
+We are a fast-growing team looking for a self-starter who can hit the ground running.
+
+Based in Manchester with office-based working. Competitive salary.
+
+Lead trading, CRO, merchandising, SEO coordination, PPC landing pages, CMS updates, stakeholder alignment, launches, and weekly board reporting.`;
+
 const KEYWORD_HINTS = [
   "digital marketing",
   "web optimisation",
@@ -138,11 +162,14 @@ const REQUIREMENT_TRIGGERS = [
 const elements = {
   jobSpecInput: document.getElementById("jobSpecInput"),
   cvInput: document.getElementById("cvInput"),
+  hallInput: document.getElementById("hallInput"),
   analyzeBtn: document.getElementById("analyzeBtn"),
+  hallOfShameBtn: document.getElementById("hallOfShameBtn"),
   clearBtn: document.getElementById("clearBtn"),
   copyJsonBtn: document.getElementById("copyJsonBtn"),
   wordCount: document.getElementById("wordCount"),
   cvWordCount: document.getElementById("cvWordCount"),
+  hallCount: document.getElementById("hallCount"),
   statusText: document.getElementById("statusText"),
   roleTitle: document.getElementById("roleTitle"),
   roleMeta: document.getElementById("roleMeta"),
@@ -170,6 +197,10 @@ const elements = {
   pressureList: document.getElementById("pressureList"),
   matchHighlightsList: document.getElementById("matchHighlightsList"),
   matchGapsList: document.getElementById("matchGapsList"),
+  hallWorstValue: document.getElementById("hallWorstValue"),
+  hallAverageValue: document.getElementById("hallAverageValue"),
+  hallCompetitiveValue: document.getElementById("hallCompetitiveValue"),
+  hallRankingList: document.getElementById("hallRankingList"),
   summaryBody: document.getElementById("summaryBody"),
   jsonOutput: document.getElementById("jsonOutput"),
 };
@@ -658,6 +689,52 @@ function buildPlainEnglishSummary(roleTitle, verdict, salaryText, responsibiliti
   return `${roleTitle} is pitched as a growth opportunity, but the ad mostly reads like a broad operational role ${salaryLine}. It expects one person to juggle ${scope}, with ${collaboration}, and the overall vibe is ${verdict.label.toLowerCase()}.`;
 }
 
+function splitHallEntries(text) {
+  return text
+    .split(/\n\s*---\s*\n/g)
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
+function buildHallOfShame(text) {
+  const entries = splitHallEntries(text);
+
+  if (!entries.length) {
+    return {
+      count: 0,
+      averageScore: null,
+      worstScore: null,
+      competitiveSalaryCount: 0,
+      ranking: [],
+    };
+  }
+
+  const ranking = entries.map((entry, index) => {
+    const analysis = analyzeSpec(entry);
+    return {
+      id: index + 1,
+      roleTitle: analysis.roleTitle,
+      overall: analysis.scores.overall,
+      verdict: analysis.verdict.label,
+      salary: analysis.salary,
+      summary: analysis.plainEnglishSummary,
+      suspicionCount: analysis.suspicionTriggers.length,
+      redFlagCount: analysis.redFlags.length,
+      hasCompetitiveSalaryTrap: analysis.suspicionTriggers.some((item) => item.includes("competitive salary")),
+    };
+  }).sort((a, b) => a.overall - b.overall);
+
+  const totalScore = ranking.reduce((sum, item) => sum + item.overall, 0);
+
+  return {
+    count: ranking.length,
+    averageScore: Math.round(totalScore / ranking.length),
+    worstScore: ranking[0].overall,
+    competitiveSalaryCount: ranking.filter((item) => item.hasCompetitiveSalaryTrap).length,
+    ranking,
+  };
+}
+
 function analyzeSpec(text) {
   const normalizedText = text.trim();
   const lines = splitLines(normalizedText);
@@ -770,8 +847,47 @@ function renderTags(container, items) {
 function updateWordCount() {
   const words = elements.jobSpecInput.value.trim().split(/\s+/).filter(Boolean);
   const cvWords = elements.cvInput.value.trim().split(/\s+/).filter(Boolean);
+  const hallEntries = splitHallEntries(elements.hallInput.value.trim());
   elements.wordCount.textContent = String(words.length);
   elements.cvWordCount.textContent = String(cvWords.length);
+  elements.hallCount.textContent = String(hallEntries.length);
+}
+
+function renderHallOfShame(hall) {
+  elements.hallWorstValue.textContent = hall.worstScore == null ? "-" : `${hall.worstScore}/100`;
+  elements.hallAverageValue.textContent = hall.averageScore == null ? "-" : `${hall.averageScore}/100`;
+  elements.hallCompetitiveValue.textContent = String(hall.competitiveSalaryCount);
+  elements.hallRankingList.innerHTML = "";
+
+  if (!hall.ranking.length) {
+    const li = document.createElement("li");
+    li.className = "hall-item";
+    li.textContent = "Paste multiple ads separated by --- to generate the leaderboard.";
+    elements.hallRankingList.appendChild(li);
+    return;
+  }
+
+  hall.ranking.forEach((item, index) => {
+    const li = document.createElement("li");
+    li.className = "hall-item";
+
+    const title = document.createElement("div");
+    title.className = "hall-item-top";
+    title.innerHTML = `<strong>#${index + 1} ${item.roleTitle}</strong><span>${item.overall}/100</span>`;
+
+    const meta = document.createElement("p");
+    meta.className = "hall-item-meta";
+    meta.textContent = `${item.verdict} | Salary: ${item.salary} | Red flags: ${item.redFlagCount} | Suspicion triggers: ${item.suspicionCount}`;
+
+    const summary = document.createElement("p");
+    summary.className = "hall-item-summary";
+    summary.textContent = item.summary;
+
+    li.appendChild(title);
+    li.appendChild(meta);
+    li.appendChild(summary);
+    elements.hallRankingList.appendChild(li);
+  });
 }
 
 function renderAnalysis(analysis, cvMatch) {
@@ -826,6 +942,9 @@ function resetAnalysis() {
   elements.responsibilityCount.textContent = "0";
   elements.requirementsCount.textContent = "0";
   elements.summaryBody.textContent = "Nothing to summarize yet.";
+  elements.hallWorstValue.textContent = "-";
+  elements.hallAverageValue.textContent = "-";
+  elements.hallCompetitiveValue.textContent = "-";
   renderList(elements.responsibilitiesList, []);
   renderList(elements.requirementsList, []);
   renderTags(elements.keywordsList, []);
@@ -837,6 +956,13 @@ function resetAnalysis() {
   renderList(elements.pressureList, []);
   renderList(elements.matchHighlightsList, []);
   renderList(elements.matchGapsList, []);
+  renderHallOfShame({
+    count: 0,
+    averageScore: null,
+    worstScore: null,
+    competitiveSalaryCount: 0,
+    ranking: [],
+  });
   elements.jsonOutput.textContent = "{}";
 }
 
@@ -859,8 +985,21 @@ function runAnalysis() {
     responsibilities: analysis.responsibilities,
     experienceYears: analysis.experienceYears,
   });
+  const hall = buildHallOfShame(elements.hallInput.value.trim());
 
   renderAnalysis(analysis, cvMatch);
+  renderHallOfShame(hall);
+  elements.jsonOutput.textContent = JSON.stringify({ analysis, cvMatch, hall }, null, 2);
+}
+
+function runHallOfShame() {
+  updateWordCount();
+  const hall = buildHallOfShame(elements.hallInput.value.trim());
+  renderHallOfShame(hall);
+  elements.statusText.textContent = hall.count
+    ? `Ranked ${hall.count} ads in Hall of Shame mode`
+    : "Paste multiple ads separated by --- to rank them";
+  elements.jsonOutput.textContent = JSON.stringify({ hall }, null, 2);
 }
 
 async function copyJson() {
@@ -874,12 +1013,16 @@ async function copyJson() {
 
 elements.jobSpecInput.value = SAMPLE_SPEC;
 elements.cvInput.value = SAMPLE_CV;
+elements.hallInput.value = SAMPLE_HALL;
 elements.jobSpecInput.addEventListener("input", updateWordCount);
 elements.cvInput.addEventListener("input", updateWordCount);
+elements.hallInput.addEventListener("input", updateWordCount);
 elements.analyzeBtn.addEventListener("click", runAnalysis);
+elements.hallOfShameBtn.addEventListener("click", runHallOfShame);
 elements.clearBtn.addEventListener("click", () => {
   elements.jobSpecInput.value = "";
   elements.cvInput.value = "";
+  elements.hallInput.value = "";
   runAnalysis();
 });
 elements.copyJsonBtn.addEventListener("click", copyJson);

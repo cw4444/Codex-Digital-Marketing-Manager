@@ -1,6 +1,6 @@
 # Codex-Digital-Marketing-Manager
 
-JobSpec Studio is a lightweight browser app that audits a UK job ad, flags suspicious wording, and compares it against a pasted CV.
+JobSpec Studio is a lightweight browser app that audits UK job ads, flags suspicious wording, compares them against a pasted CV, and can rank multiple ads in a Hall of Shame leaderboard.
 
 ## What it does
 
@@ -10,6 +10,7 @@ JobSpec Studio is a lightweight browser app that audits a UK job ad, flags suspi
 - treats phrases like `competitive salary`, `we're a family`, and culture-heavy fluff as suspicion triggers when the offer is vague
 - highlights green flags, stakeholder load, and likely pressure points
 - compares a pasted CV or profile summary against the ad and estimates overlap, likely gaps, and match strength
+- supports a Hall of Shame mode where multiple ads can be pasted and ranked from worst to least bad
 - suggests negotiation leverage based on what the ad itself reveals
 - shows a structured JSON version of the analysis
 
@@ -18,3 +19,7 @@ JobSpec Studio is a lightweight browser app that audits a UK job ad, flags suspi
 Open `index.html` in a browser.
 
 No install step is required.
+
+## Hall of Shame mode
+
+Paste multiple ads into the Hall of Shame box and separate each one with a line that contains only `---`.
