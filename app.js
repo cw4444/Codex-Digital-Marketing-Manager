@@ -169,6 +169,7 @@ const elements = {
   clearBtn: document.getElementById("clearBtn"),
   copyJsonBtn: document.getElementById("copyJsonBtn"),
   copyPostBtn: document.getElementById("copyPostBtn"),
+  postToneSelect: document.getElementById("postToneSelect"),
   wordCount: document.getElementById("wordCount"),
   cvWordCount: document.getElementById("cvWordCount"),
   hallCount: document.getElementById("hallCount"),
@@ -738,30 +739,56 @@ function buildHallOfShame(text) {
   };
 }
 
-function buildLinkedInPost(hall) {
+function buildLinkedInPost(hall, tone = "linkedin") {
   if (!hall.ranking.length) {
     return "Paste multiple ads into Hall of Shame mode and generate a leaderboard first.";
   }
 
   const worst = hall.ranking[0];
-  const lines = [
-    `Excited to announce that "${worst.roleTitle}" has set a new personal best for taking the piss.`,
-    "",
-    "After a rigorous selection process involving absolutely no shame, it delivered:",
-    `- a score of ${worst.overall}/100 on the Hall of Shame index`,
-    `- ${worst.redFlagCount} red flags and ${worst.suspicionCount} suspicion triggers`,
-    `- salary transparency described as: ${worst.salary}`,
-    "",
-    "Key learnings:",
-    "- if the pay is vague enough, apparently culture can be listed as a line item",
-    "- one human can now be expected to do three jobs as long as the wording says growth opportunity",
-    "- emotional branding remains undefeated as a substitute for budget",
-    "",
-    "Really proud of everyone who made this possible.",
-    "#LinkedIn #Jobs #Recruitment #CareerGrowth #TakingThePiss",
-  ];
+  const toneMap = {
+    subtle: [
+      `Today's Hall of Shame winner is "${worst.roleTitle}".`,
+      "",
+      `${worst.summary}`,
+      "",
+      `It scored ${worst.overall}/100, with ${worst.redFlagCount} red flags, ${worst.suspicionCount} suspicion triggers, and salary language listed as: ${worst.salary}.`,
+      "",
+      "Worth asking more questions before anyone burns time on an application.",
+    ],
+    linkedin: [
+      `Excited to announce that "${worst.roleTitle}" has set a new personal best for taking the piss.`,
+      "",
+      "After a rigorous selection process involving absolutely no shame, it delivered:",
+      `- a score of ${worst.overall}/100 on the Hall of Shame index`,
+      `- ${worst.redFlagCount} red flags and ${worst.suspicionCount} suspicion triggers`,
+      `- salary transparency described as: ${worst.salary}`,
+      "",
+      "Key learnings:",
+      "- if the pay is vague enough, apparently culture can be listed as a line item",
+      "- one human can now be expected to do three jobs as long as the wording says growth opportunity",
+      "- emotional branding remains undefeated as a substitute for budget",
+      "",
+      "Really proud of everyone who made this possible.",
+      "#LinkedIn #Jobs #Recruitment #CareerGrowth #TakingThePiss",
+    ],
+    unhinged: [
+      `BREAKING: "${worst.roleTitle}" has smashed the office delusion index with a glorious ${worst.overall}/100.`,
+      "",
+      `Current offer: ${worst.salary}. Current expectation: one poor bastard does everything.`,
+      "",
+      `Today's stats: ${worst.redFlagCount} red flags. ${worst.suspicionCount} suspicion triggers. One absolutely shameless vibe.`,
+      "",
+      "The recruiter starter pack remains undefeated:",
+      "- call it a growth opportunity",
+      "- whisper competitive salary into the void",
+      "- mention culture like payroll is a state of mind",
+      "",
+      "See you all on the timeline when the same job gets reposted in 6 weeks.",
+      "#Jobs #UKJobs #Recruitment #HallOfShame #Lmao",
+    ],
+  };
 
-  return lines.join("\n");
+  return (toneMap[tone] || toneMap.linkedin).join("\n");
 }
 
 function analyzeSpec(text) {
@@ -1020,18 +1047,20 @@ function runAnalysis() {
     experienceYears: analysis.experienceYears,
   });
   const hall = buildHallOfShame(elements.hallInput.value.trim());
+  const tone = elements.postToneSelect.value;
 
   renderAnalysis(analysis, cvMatch);
   renderHallOfShame(hall);
-  renderLinkedInPost(buildLinkedInPost(hall));
+  renderLinkedInPost(buildLinkedInPost(hall, tone));
   elements.jsonOutput.textContent = JSON.stringify({ analysis, cvMatch, hall }, null, 2);
 }
 
 function runHallOfShame() {
   updateWordCount();
   const hall = buildHallOfShame(elements.hallInput.value.trim());
+  const tone = elements.postToneSelect.value;
   renderHallOfShame(hall);
-  renderLinkedInPost(buildLinkedInPost(hall));
+  renderLinkedInPost(buildLinkedInPost(hall, tone));
   elements.statusText.textContent = hall.count
     ? `Ranked ${hall.count} ads in Hall of Shame mode`
     : "Paste multiple ads separated by --- to rank them";
@@ -1041,10 +1070,11 @@ function runHallOfShame() {
 function generateLinkedInPost() {
   updateWordCount();
   const hall = buildHallOfShame(elements.hallInput.value.trim());
+  const tone = elements.postToneSelect.value;
   renderHallOfShame(hall);
-  renderLinkedInPost(buildLinkedInPost(hall));
+  renderLinkedInPost(buildLinkedInPost(hall, tone));
   elements.statusText.textContent = hall.count
-    ? "Generated LinkedIn waffle from the worst-ranked ad"
+    ? `Generated ${tone === "linkedin" ? "LinkedIn waffle" : tone} post from the worst-ranked ad`
     : "Paste multiple ads separated by --- before generating a post";
 }
 
@@ -1072,6 +1102,7 @@ elements.hallInput.value = SAMPLE_HALL;
 elements.jobSpecInput.addEventListener("input", updateWordCount);
 elements.cvInput.addEventListener("input", updateWordCount);
 elements.hallInput.addEventListener("input", updateWordCount);
+elements.postToneSelect.addEventListener("change", generateLinkedInPost);
 elements.analyzeBtn.addEventListener("click", runAnalysis);
 elements.hallOfShameBtn.addEventListener("click", runHallOfShame);
 elements.generatePostBtn.addEventListener("click", generateLinkedInPost);

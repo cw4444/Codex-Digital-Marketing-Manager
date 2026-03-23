@@ -140,9 +140,17 @@
             <article class="content-card wide-card linkedin-card">
               <div class="content-header">
                 <h3>LinkedIn waffle generator</h3>
-                <button id="copyPostBtn" class="button button-ghost">Copy post</button>
+                <div class="post-controls">
+                  <label class="tone-label" for="postToneSelect">Tone</label>
+                  <select id="postToneSelect" class="tone-select">
+                    <option value="subtle">Subtle</option>
+                    <option value="linkedin" selected>LinkedIn waffle</option>
+                    <option value="unhinged">Fully unhinged</option>
+                  </select>
+                  <button id="copyPostBtn" class="button button-ghost">Copy post</button>
+                </div>
               </div>
-              <p class="helper-text">Generates a smug little post based on the worst ad in Hall of Shame mode.</p>
+              <p class="helper-text">Generates a post based on the worst ad in Hall of Shame mode, with a tone suited to LinkedIn or X.</p>
               <pre id="linkedinPostOutput" class="linkedin-post"></pre>
             </article>
 
