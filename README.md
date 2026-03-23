@@ -1,6 +1,6 @@
-# JobSpec Studio
+# Codex-Digital-Marketing-Manager
 
-A lightweight browser app that turns a raw job description into a structured role brief.
+JobSpec Studio is a lightweight browser app that turns a raw job description into a structured role brief.
 
 ## What it does
 
@@ -12,6 +12,6 @@ A lightweight browser app that turns a raw job description into a structured rol
 
 ## Run it
 
-Open [index.html](./index.html) in a browser.
+Open `index.html` in a browser.
 
 No install step is required.
