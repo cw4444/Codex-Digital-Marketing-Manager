@@ -300,6 +300,12 @@ textarea {
     var(--surface-strong);
 }
 
+.linkedin-card {
+  background:
+    linear-gradient(180deg, rgba(31, 111, 106, 0.12), rgba(255, 253, 248, 0.98)),
+    var(--surface-strong);
+}
+
 .hall-summary {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -342,6 +348,15 @@ textarea {
 .hall-item-meta {
   color: var(--muted);
   font-size: 0.95rem;
+}
+
+.linkedin-post {
+  margin: 16px 0 0;
+  padding: 18px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.62);
+  color: var(--ink);
+  white-space: pre-wrap;
 }
 
 .metric-card {

@@ -38,6 +38,7 @@
             <div class="panel-actions">
               <button id="analyzeBtn" class="button button-primary">Audit and match</button>
               <button id="hallOfShameBtn" class="button button-secondary">Run Hall of Shame</button>
+              <button id="generatePostBtn" class="button button-secondary">Generate LinkedIn post</button>
               <button id="clearBtn" class="button button-secondary">Clear</button>
             </div>
           </div>
@@ -134,6 +135,15 @@
                 </article>
               </div>
               <ol id="hallRankingList" class="hall-ranking"></ol>
+            </article>
+
+            <article class="content-card wide-card linkedin-card">
+              <div class="content-header">
+                <h3>LinkedIn waffle generator</h3>
+                <button id="copyPostBtn" class="button button-ghost">Copy post</button>
+              </div>
+              <p class="helper-text">Generates a smug little post based on the worst ad in Hall of Shame mode.</p>
+              <pre id="linkedinPostOutput" class="linkedin-post"></pre>
             </article>
 
             <article class="content-card wide-card">
