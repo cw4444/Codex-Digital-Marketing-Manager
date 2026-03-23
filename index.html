@@ -10,20 +10,20 @@
     <div class="page-shell">
       <header class="hero">
         <div class="hero-copy">
-          <p class="eyebrow">Job spec experiment</p>
-          <h1>Turn a raw job description into something you can actually use.</h1>
+          <p class="eyebrow">UK Job Ad Reality Check</p>
+          <h1>Paste a job ad and see how much nonsense it expects you to swallow.</h1>
           <p class="hero-text">
-            Paste any job spec and the app will break it into a structured brief,
-            core responsibilities, skills, hiring signals, and interview or
-            application prompts.
+            This version is less polite. It audits scope, salary transparency,
+            stakeholder overload, and the classic British habit of calling
+            underpaid complexity a growth opportunity.
           </p>
         </div>
         <div class="hero-card">
-          <p class="hero-card-label">Built for this workspace</p>
+          <p class="hero-card-label">What it calls out</p>
           <ul class="hero-card-list">
-            <li>Preloaded with your sample spec</li>
-            <li>Runs fully in the browser</li>
-            <li>Exports structured JSON</li>
+            <li>Wide scope for weak pay</li>
+            <li>Buzzword-heavy support-light wording</li>
+            <li>What you can challenge before applying</li>
           </ul>
         </div>
       </header>
@@ -33,15 +33,15 @@
           <div class="panel-heading">
             <div>
               <p class="panel-label">Input</p>
-              <h2>Job spec</h2>
+              <h2>Job ad text</h2>
             </div>
             <div class="panel-actions">
-              <button id="analyzeBtn" class="button button-primary">Analyze spec</button>
+              <button id="analyzeBtn" class="button button-primary">Audit ad</button>
               <button id="clearBtn" class="button button-secondary">Clear</button>
             </div>
           </div>
 
-          <label class="field-label" for="jobSpecInput">Paste or edit a job description</label>
+          <label class="field-label" for="jobSpecInput">Paste the full job description</label>
           <textarea id="jobSpecInput" spellcheck="false"></textarea>
 
           <div class="utility-row">
@@ -57,9 +57,9 @@
           <div class="panel-heading">
             <div>
               <p class="panel-label">Output</p>
-              <h2>Structured role brief</h2>
+              <h2>Reality check</h2>
             </div>
-            <p id="statusText" class="status-text">Ready to analyze</p>
+            <p id="statusText" class="status-text">Paste a UK job ad to audit it</p>
           </div>
 
           <div class="summary-grid">
@@ -69,8 +69,41 @@
               <p id="roleMeta" class="muted-text">Paste a spec to extract details.</p>
             </article>
 
-            <article class="summary-card">
-              <p class="summary-label">Snapshot</p>
+            <article class="summary-card verdict-card">
+              <p class="summary-label">Verdict</p>
+              <div class="verdict-score" id="verdictScore">-</div>
+              <h3 id="verdictLabel">No verdict yet</h3>
+              <p id="verdictSummary" class="muted-text">The app will score the ad once there is enough text to read.</p>
+            </article>
+          </div>
+
+          <div class="score-strip">
+            <article class="metric-card">
+              <p class="metric-label">Balance</p>
+              <p class="metric-value" id="balanceValue">-</p>
+            </article>
+            <article class="metric-card">
+              <p class="metric-label">Transparency</p>
+              <p class="metric-value" id="transparencyValue">-</p>
+            </article>
+            <article class="metric-card">
+              <p class="metric-label">Candidate power</p>
+              <p class="metric-value" id="candidateValue">-</p>
+            </article>
+          </div>
+
+          <div class="content-grid">
+            <article class="content-card wide-card">
+              <div class="content-header">
+                <h3>Plain-English summary</h3>
+              </div>
+              <p id="summaryBody" class="summary-body">Nothing to summarize yet.</p>
+            </article>
+
+            <article class="content-card">
+              <div class="content-header">
+                <h3>Snapshot</h3>
+              </div>
               <dl class="meta-list">
                 <div>
                   <dt>Salary</dt>
@@ -90,9 +123,35 @@
                 </div>
               </dl>
             </article>
-          </div>
 
-          <div class="content-grid">
+            <article class="content-card bad-card">
+              <div class="content-header">
+                <h3>Red flags</h3>
+              </div>
+              <ul id="redFlagsList" class="bullet-list"></ul>
+            </article>
+
+            <article class="content-card good-card">
+              <div class="content-header">
+                <h3>Green flags</h3>
+              </div>
+              <ul id="greenFlagsList" class="bullet-list"></ul>
+            </article>
+
+            <article class="content-card">
+              <div class="content-header">
+                <h3>Negotiation leverage</h3>
+              </div>
+              <ul id="leverageList" class="bullet-list"></ul>
+            </article>
+
+            <article class="content-card">
+              <div class="content-header">
+                <h3>Pressure points</h3>
+              </div>
+              <ul id="pressureList" class="bullet-list"></ul>
+            </article>
+
             <article class="content-card">
               <div class="content-header">
                 <h3>Responsibilities</h3>
@@ -121,20 +180,6 @@
                 <h3>Stakeholders</h3>
               </div>
               <div id="stakeholdersList" class="tag-list"></div>
-            </article>
-
-            <article class="content-card">
-              <div class="content-header">
-                <h3>Interview prompts</h3>
-              </div>
-              <ol id="questionsList" class="number-list"></ol>
-            </article>
-
-            <article class="content-card">
-              <div class="content-header">
-                <h3>Application talking points</h3>
-              </div>
-              <ul id="talkingPointsList" class="bullet-list"></ul>
             </article>
           </div>
 

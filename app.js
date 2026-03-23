@@ -74,6 +74,59 @@ const STAKEHOLDER_HINTS = [
   "Dealerships",
 ];
 
+const BENEFIT_HINTS = [
+  "bonus",
+  "pension",
+  "private healthcare",
+  "healthcare",
+  "holiday",
+  "annual leave",
+  "flexible working",
+  "remote",
+  "hybrid",
+  "share scheme",
+  "life assurance",
+  "wellbeing",
+  "learning budget",
+  "training",
+];
+
+const RESPONSIBILITY_TRIGGERS = [
+  "work ",
+  "map ",
+  "use ",
+  "develop ",
+  "identify ",
+  "measure ",
+  "digital lead",
+  "own ",
+  "prioritise ",
+  "prioritize ",
+  "collaborate ",
+  "manage ",
+  "support ",
+  "deliver ",
+  "drive ",
+  "lead ",
+  "create ",
+  "implement ",
+];
+
+const REQUIREMENT_TRIGGERS = [
+  "minimum",
+  "experience",
+  "ability",
+  "understanding",
+  "skills",
+  "desire to",
+  "proven",
+  "collaborative",
+  "excellent",
+  "strong",
+  "confident",
+  "must ",
+];
+
 const elements = {
   jobSpecInput: document.getElementById("jobSpecInput"),
   analyzeBtn: document.getElementById("analyzeBtn"),
@@ -87,14 +140,23 @@ const elements = {
   locationValue: document.getElementById("locationValue"),
   experienceValue: document.getElementById("experienceValue"),
   workingStyleValue: document.getElementById("workingStyleValue"),
+  verdictScore: document.getElementById("verdictScore"),
+  verdictLabel: document.getElementById("verdictLabel"),
+  verdictSummary: document.getElementById("verdictSummary"),
+  balanceValue: document.getElementById("balanceValue"),
+  transparencyValue: document.getElementById("transparencyValue"),
+  candidateValue: document.getElementById("candidateValue"),
   responsibilityCount: document.getElementById("responsibilityCount"),
   requirementsCount: document.getElementById("requirementsCount"),
   responsibilitiesList: document.getElementById("responsibilitiesList"),
   requirementsList: document.getElementById("requirementsList"),
   keywordsList: document.getElementById("keywordsList"),
   stakeholdersList: document.getElementById("stakeholdersList"),
-  questionsList: document.getElementById("questionsList"),
-  talkingPointsList: document.getElementById("talkingPointsList"),
+  redFlagsList: document.getElementById("redFlagsList"),
+  greenFlagsList: document.getElementById("greenFlagsList"),
+  leverageList: document.getElementById("leverageList"),
+  pressureList: document.getElementById("pressureList"),
+  summaryBody: document.getElementById("summaryBody"),
   jsonOutput: document.getElementById("jsonOutput"),
 };
 
@@ -119,8 +181,34 @@ function extractRoleTitle(lines) {
 }
 
 function extractSalary(text) {
-  const match = text.match(/(?:salary of |up to |salary up to )([£$€]\s?[\d,.kK]+)/i);
-  return match ? match[1].replace(/\s+/g, "") : "Not stated";
+  const salaryMatch = text.match(/(?:salary of |up to |salary up to |salary )([£]\s?[\d,]+(?:\.\d+)?k?)/i);
+  return salaryMatch ? salaryMatch[1].replace(/\s+/g, "") : "Not stated";
+}
+
+function extractSalaryNumber(salaryText) {
+  if (!salaryText || salaryText === "Not stated") {
+    return null;
+  }
+
+  const match = salaryText.match(/£([\d,]+(?:\.\d+)?)(k?)/i);
+  if (!match) {
+    return null;
+  }
+
+  const raw = Number(match[1].replace(/,/g, ""));
+  return match[2].toLowerCase() === "k" ? raw * 1000 : raw;
+}
+
+function formatCurrency(value) {
+  if (value == null) {
+    return "Not stated";
+  }
+
+  return new Intl.NumberFormat("en-GB", {
+    style: "currency",
+    currency: "GBP",
+    maximumFractionDigits: 0,
+  }).format(value);
 }
 
 function extractLocation(text) {
@@ -134,6 +222,7 @@ function extractWorkingStyle(text) {
   if (!found) {
     return "Not stated";
   }
+
   return found === "onsite" ? "On-site" : found[0].toUpperCase() + found.slice(1);
 }
 
@@ -142,38 +231,28 @@ function extractExperience(text) {
   return rangeMatch ? `${rangeMatch[1].replace(/\s+/g, "")} years` : "Not stated";
 }
 
+function extractExperienceYears(experienceText) {
+  if (!experienceText || experienceText === "Not stated") {
+    return null;
+  }
+
+  const range = experienceText.match(/(\d+)-(\d+)/);
+  if (range) {
+    return Number(range[2]);
+  }
+
+  const simple = experienceText.match(/(\d+)/);
+  return simple ? Number(simple[1]) : null;
+}
+
 function classifyLine(line) {
   const lower = line.toLowerCase();
-  const requirementTriggers = [
-    "minimum",
-    "experience",
-    "ability",
-    "understanding",
-    "skills",
-    "desire to",
-    "proven",
-    "collaborative",
-    "excellent",
-  ];
-  const responsibilityTriggers = [
-    "work ",
-    "map ",
-    "use ",
-    "develop ",
-    "identify ",
-    "measure ",
-    "digital lead",
-    "own ",
-    "prioritise ",
-    "prioritize ",
-    "collaborate ",
-  ];
 
-  if (requirementTriggers.some((trigger) => lower.startsWith(trigger))) {
+  if (REQUIREMENT_TRIGGERS.some((trigger) => lower.startsWith(trigger))) {
     return "requirement";
   }
 
-  if (responsibilityTriggers.some((trigger) => lower.startsWith(trigger))) {
+  if (RESPONSIBILITY_TRIGGERS.some((trigger) => lower.startsWith(trigger))) {
     return "responsibility";
   }
 
@@ -202,54 +281,200 @@ function extractSections(lines) {
 
 function extractKeywords(text) {
   const lower = text.toLowerCase();
-  return unique(
-    KEYWORD_HINTS.filter((keyword) => lower.includes(keyword.toLowerCase())).map((keyword) => keyword)
-  );
+  return unique(KEYWORD_HINTS.filter((keyword) => lower.includes(keyword.toLowerCase())));
 }
 
 function extractStakeholders(text) {
   const lower = text.toLowerCase();
-  return unique(
-    STAKEHOLDER_HINTS.filter((stakeholder) =>
-      lower.includes(stakeholder.toLowerCase())
-    )
-  );
+  return unique(STAKEHOLDER_HINTS.filter((stakeholder) => lower.includes(stakeholder.toLowerCase())));
 }
 
-function buildInterviewQuestions(roleTitle, responsibilities, requirements) {
-  const starter = roleTitle !== "Role not detected" ? roleTitle : "this role";
-  const prompts = [
-    `Tell me about a time you improved performance in a channel or journey similar to ${starter}.`,
-    "How would you use data to identify weak points in a digital customer journey and decide what to fix first?",
-    "Describe how you have aligned product, marketing, and development stakeholders around a web optimisation priority.",
+function countBenefits(text) {
+  const lower = text.toLowerCase();
+  return unique(BENEFIT_HINTS.filter((benefit) => lower.includes(benefit))).length;
+}
+
+function detectBuzzwords(text) {
+  const phrases = [
+    "fast-growing",
+    "self-motivated",
+    "hard-working",
+    "self-starter",
+    "autonomous quickly",
+    "competitive basic salary",
+    "opportunity to develop and grow",
+    "best-in-class",
+    "process-driven",
   ];
 
-  if (responsibilities[0]) {
-    prompts.push(`What approach would you take to deliver this responsibility well: "${responsibilities[0]}"?`);
-  }
-
-  if (requirements[0]) {
-    prompts.push(`Which past example best proves this requirement in practice: "${requirements[0]}"?`);
-  }
-
-  return unique(prompts).slice(0, 5);
+  const lower = text.toLowerCase();
+  return unique(phrases.filter((phrase) => lower.includes(phrase)));
 }
 
-function buildTalkingPoints(requirements, keywords, responsibilities) {
+function scoreJobSpec({ salaryNumber, responsibilities, requirements, stakeholders, benefitsCount, experienceYears, text }) {
+  let score = 60;
+  const redFlags = [];
+  const greenFlags = [];
+
+  if (!salaryNumber) {
+    score -= 20;
+    redFlags.push("No salary listed, which usually shifts the negotiation risk onto the candidate.");
+  } else {
+    greenFlags.push(`Salary transparency exists: the ad states ${formatCurrency(salaryNumber)}.`);
+  }
+
+  if (salaryNumber && salaryNumber <= 40000 && responsibilities.length >= 9) {
+    score -= 18;
+    redFlags.push("The scope is wide for a sub-£40k salary, which suggests a stretch role without stretch pay.");
+  }
+
+  if (responsibilities.length >= 10) {
+    score -= 10;
+    redFlags.push("The ad bundles a lot of delivery, strategy, process, and stakeholder work into one role.");
+  } else if (responsibilities.length >= 6) {
+    score -= 4;
+  }
+
+  if (stakeholders.length >= 8) {
+    score -= 8;
+    redFlags.push("There are many stakeholder groups named, which often means heavy coordination overhead.");
+  } else if (stakeholders.length >= 4) {
+    greenFlags.push("The collaboration surface is clear, so the team shape is at least visible.");
+  }
+
+  if (requirements.length >= 6) {
+    score -= 6;
+    redFlags.push("The requirement list is fairly stacked, which can read like an everything-profile search.");
+  }
+
+  if (experienceYears && salaryNumber && experienceYears >= 4 && salaryNumber <= 40000) {
+    score -= 8;
+    redFlags.push("The experience ask feels senior-ish for the salary band shown.");
+  }
+
+  if (benefitsCount === 0) {
+    score -= 6;
+    redFlags.push("The package is vague beyond salary, so the candidate has to guess the real value of the offer.");
+  } else if (benefitsCount >= 2) {
+    score += 6;
+    greenFlags.push("The ad hints at some package detail instead of treating pay as the whole story.");
+  }
+
+  if (/hybrid/i.test(text)) {
+    score += 5;
+    greenFlags.push("Hybrid working is named explicitly, which is more useful than hand-wavy flexibility language.");
+  }
+
+  if (/data-driven|measure performance|kpis/i.test(text)) {
+    score += 4;
+    greenFlags.push("Success signals are partly tied to data and KPIs rather than pure vibes.");
+  }
+
+  if (/opportunity to develop|desire to learn|build on existing skills/i.test(text)) {
+    score += 2;
+    greenFlags.push("There is at least some language around growth rather than just output extraction.");
+  }
+
+  if (/self-starter|hard-working|self-motivated|autonomous quickly/i.test(text)) {
+    score -= 6;
+    redFlags.push("The ad leans on resilience buzzwords, which can be code for thin support or unclear onboarding.");
+  }
+
+  score = Math.max(0, Math.min(100, score));
+
+  return {
+    score,
+    redFlags: unique(redFlags),
+    greenFlags: unique(greenFlags),
+  };
+}
+
+function buildVerdict(score) {
+  if (score >= 75) {
+    return {
+      label: "Surprisingly fair",
+      summary: "This one looks more balanced than most. Still worth probing scope versus support.",
+      tone: "good",
+    };
+  }
+
+  if (score >= 55) {
+    return {
+      label: "Mixed bag",
+      summary: "Some decent signals, but the ad still asks for a lot and leaves gaps you would want clarified.",
+      tone: "warn",
+    };
+  }
+
+  if (score >= 35) {
+    return {
+      label: "Classic UK job ad nonsense",
+      summary: "Plenty of responsibility, respectable experience expectations, and not much evidence the package matches the ask.",
+      tone: "bad",
+    };
+  }
+
+  return {
+    label: "Weaponised optimism",
+    summary: "The advert is asking one person to absorb a lot of scope while dressing it up as growth and autonomy.",
+    tone: "bad",
+  };
+}
+
+function buildPressurePoints(responsibilities, stakeholders, buzzwords) {
   const points = [];
 
-  if (requirements[0]) {
-    points.push(`Lead with evidence for this requirement: ${requirements[0]}`);
+  if (responsibilities.length >= 9) {
+    points.push(`You are carrying ${responsibilities.length} distinct responsibility signals before the role is even fully defined.`);
   }
-  if (keywords.length) {
-    points.push(`Mirror the language in the spec by referencing ${keywords.slice(0, 4).join(", ")}.`);
-  }
-  if (responsibilities[0]) {
-    points.push(`Use a result-focused example tied to: ${responsibilities[0]}`);
-  }
-  points.push("Show how you balance data, stakeholder management, and execution rather than speaking only in channel metrics.");
 
-  return unique(points);
+  if (stakeholders.length >= 6) {
+    points.push(`The role touches ${stakeholders.length} stakeholder groups, so influencing and chasing could eat a lot of the week.`);
+  }
+
+  if (buzzwords.length >= 3) {
+    points.push(`The wording leans heavily on effort language: ${buzzwords.slice(0, 3).join(", ")}.`);
+  }
+
+  if (!points.length) {
+    points.push("No obvious overload pattern was detected, though the ad should still be tested against day-to-day reality.");
+  }
+
+  return points;
+}
+
+function buildLeveragePoints({ salaryNumber, workingStyle, redFlags, greenFlags, responsibilities }) {
+  const leverage = [];
+
+  if (salaryNumber && responsibilities.length >= 8) {
+    leverage.push("You can argue for a higher band by tying the breadth of scope to strategy, delivery, optimisation, and cross-functional ownership.");
+  }
+
+  if (workingStyle === "Hybrid") {
+    leverage.push("Hybrid is already on the table, so you can negotiate for predictable office expectations instead of vague flexibility.");
+  }
+
+  if (redFlags.some((flag) => flag.includes("package is vague"))) {
+    leverage.push("Ask for the real package in writing: pension, holidays, bonus structure, and development budget.");
+  }
+
+  if (greenFlags.some((flag) => flag.includes("KPIs"))) {
+    leverage.push("Because the ad references KPIs, you can ask what success looks like in the first 90 days and how performance is measured.");
+  }
+
+  if (!leverage.length) {
+    leverage.push("Use the ad's own wording to pin down scope, priorities, support, and progression before investing too much time.");
+  }
+
+  return leverage;
+}
+
+function buildPlainEnglishSummary(roleTitle, verdict, salaryText, responsibilities, stakeholders) {
+  const salaryLine = salaryText === "Not stated" ? "without saying what it pays" : `for ${salaryText}`;
+  const scope = responsibilities.length ? `${responsibilities.length} named responsibility areas` : "a fairly broad scope";
+  const collaboration = stakeholders.length ? `${stakeholders.length} stakeholder groups in the mix` : "unclear stakeholder load";
+
+  return `${roleTitle} is pitched as a growth opportunity, but the ad mostly reads like a broad operational role ${salaryLine}. It expects one person to juggle ${scope}, with ${collaboration}, and the overall vibe is ${verdict.label.toLowerCase()}.`;
 }
 
 function analyzeSpec(text) {
@@ -260,22 +485,60 @@ function analyzeSpec(text) {
   const keywords = extractKeywords(normalizedText);
   const stakeholders = extractStakeholders(normalizedText);
   const salary = extractSalary(normalizedText);
+  const salaryNumber = extractSalaryNumber(salary);
   const location = extractLocation(normalizedText);
   const experience = extractExperience(normalizedText);
+  const experienceYears = extractExperienceYears(experience);
   const workingStyle = extractWorkingStyle(normalizedText);
+  const benefitsCount = countBenefits(normalizedText);
+  const buzzwords = detectBuzzwords(normalizedText);
+  const scoring = scoreJobSpec({
+    salaryNumber,
+    responsibilities,
+    requirements,
+    stakeholders,
+    benefitsCount,
+    experienceYears,
+    text: normalizedText,
+  });
+  const verdict = buildVerdict(scoring.score);
+
+  const balanceScore = Math.max(0, Math.min(100, 100 - responsibilities.length * 6 - stakeholders.length * 2 + (salaryNumber ? 10 : -10)));
+  const transparencyScore = Math.max(0, Math.min(100, (salaryNumber ? 45 : 5) + benefitsCount * 18 + (workingStyle !== "Not stated" ? 14 : 0)));
+  const candidateScore = Math.max(0, Math.min(100, 55 + (workingStyle === "Hybrid" ? 8 : 0) + (salaryNumber ? 6 : -10) - scoring.redFlags.length * 4 + scoring.greenFlags.length * 4));
 
   return {
     roleTitle,
     salary,
+    salaryNumber,
     location,
     experience,
+    experienceYears,
     workingStyle,
     responsibilities,
     requirements,
     keywords,
     stakeholders,
-    interviewQuestions: buildInterviewQuestions(roleTitle, responsibilities, requirements),
-    applicationTalkingPoints: buildTalkingPoints(requirements, keywords, responsibilities),
+    buzzwords,
+    benefitsCount,
+    verdict,
+    scores: {
+      overall: scoring.score,
+      balance: balanceScore,
+      transparency: transparencyScore,
+      candidatePower: candidateScore,
+    },
+    plainEnglishSummary: buildPlainEnglishSummary(roleTitle, verdict, salary, responsibilities, stakeholders),
+    redFlags: scoring.redFlags,
+    greenFlags: scoring.greenFlags,
+    leveragePoints: buildLeveragePoints({
+      salaryNumber,
+      workingStyle,
+      redFlags: scoring.redFlags,
+      greenFlags: scoring.greenFlags,
+      responsibilities,
+    }),
+    pressurePoints: buildPressurePoints(responsibilities, stakeholders, buzzwords),
     sourceStats: {
       lines: lines.length,
       words: normalizedText.split(/\s+/).filter(Boolean).length,
@@ -284,14 +547,12 @@ function analyzeSpec(text) {
   };
 }
 
-function renderList(container, items, className = "") {
+function renderList(container, items, emptyText = "Nothing detected yet.") {
   container.innerHTML = "";
+
   if (!items.length) {
     const li = document.createElement("li");
-    li.textContent = "Nothing detected yet.";
-    if (className) {
-      li.className = className;
-    }
+    li.textContent = emptyText;
     container.appendChild(li);
     return;
   }
@@ -299,15 +560,13 @@ function renderList(container, items, className = "") {
   items.forEach((item) => {
     const li = document.createElement("li");
     li.textContent = item;
-    if (className) {
-      li.className = className;
-    }
     container.appendChild(li);
   });
 }
 
 function renderTags(container, items) {
   container.innerHTML = "";
+
   if (!items.length) {
     const span = document.createElement("span");
     span.className = "muted-text";
@@ -330,13 +589,19 @@ function updateWordCount() {
 }
 
 function renderAnalysis(analysis) {
-  elements.statusText.textContent = `Analyzed ${analysis.sourceStats.words} words`;
+  elements.statusText.textContent = `Ran UK job ad audit on ${analysis.sourceStats.words} words`;
   elements.roleTitle.textContent = analysis.roleTitle;
   elements.roleMeta.textContent = `${analysis.sourceStats.lines} meaningful lines detected`;
   elements.salaryValue.textContent = analysis.salary;
   elements.locationValue.textContent = analysis.location;
   elements.experienceValue.textContent = analysis.experience;
   elements.workingStyleValue.textContent = analysis.workingStyle;
+  elements.verdictScore.textContent = `${analysis.scores.overall}/100`;
+  elements.verdictLabel.textContent = analysis.verdict.label;
+  elements.verdictSummary.textContent = analysis.verdict.summary;
+  elements.balanceValue.textContent = `${analysis.scores.balance}/100`;
+  elements.transparencyValue.textContent = `${analysis.scores.transparency}/100`;
+  elements.candidateValue.textContent = `${analysis.scores.candidatePower}/100`;
   elements.responsibilityCount.textContent = String(analysis.responsibilities.length);
   elements.requirementsCount.textContent = String(analysis.requirements.length);
 
@@ -344,10 +609,40 @@ function renderAnalysis(analysis) {
   renderList(elements.requirementsList, analysis.requirements);
   renderTags(elements.keywordsList, analysis.keywords);
   renderTags(elements.stakeholdersList, analysis.stakeholders);
-  renderList(elements.questionsList, analysis.interviewQuestions);
-  renderList(elements.talkingPointsList, analysis.applicationTalkingPoints);
-
+  renderList(elements.redFlagsList, analysis.redFlags, "No big red flags were detected.");
+  renderList(elements.greenFlagsList, analysis.greenFlags, "No standout positives were detected.");
+  renderList(elements.leverageList, analysis.leveragePoints);
+  renderList(elements.pressureList, analysis.pressurePoints);
+  elements.summaryBody.textContent = analysis.plainEnglishSummary;
   elements.jsonOutput.textContent = JSON.stringify(analysis, null, 2);
+}
+
+function resetAnalysis() {
+  elements.statusText.textContent = "Paste a UK job ad to audit it";
+  elements.roleTitle.textContent = "Not detected yet";
+  elements.roleMeta.textContent = "Paste a spec to extract details.";
+  elements.salaryValue.textContent = "-";
+  elements.locationValue.textContent = "-";
+  elements.experienceValue.textContent = "-";
+  elements.workingStyleValue.textContent = "-";
+  elements.verdictScore.textContent = "-";
+  elements.verdictLabel.textContent = "No verdict yet";
+  elements.verdictSummary.textContent = "The app will score the ad once there is enough text to read.";
+  elements.balanceValue.textContent = "-";
+  elements.transparencyValue.textContent = "-";
+  elements.candidateValue.textContent = "-";
+  elements.responsibilityCount.textContent = "0";
+  elements.requirementsCount.textContent = "0";
+  elements.summaryBody.textContent = "Nothing to summarize yet.";
+  renderList(elements.responsibilitiesList, []);
+  renderList(elements.requirementsList, []);
+  renderTags(elements.keywordsList, []);
+  renderTags(elements.stakeholdersList, []);
+  renderList(elements.redFlagsList, []);
+  renderList(elements.greenFlagsList, []);
+  renderList(elements.leverageList, []);
+  renderList(elements.pressureList, []);
+  elements.jsonOutput.textContent = "{}";
 }
 
 function runAnalysis() {
@@ -355,22 +650,7 @@ function runAnalysis() {
   updateWordCount();
 
   if (!text) {
-    elements.statusText.textContent = "Paste a spec to analyze";
-    elements.roleTitle.textContent = "Not detected yet";
-    elements.roleMeta.textContent = "Paste a spec to extract details.";
-    elements.salaryValue.textContent = "-";
-    elements.locationValue.textContent = "-";
-    elements.experienceValue.textContent = "-";
-    elements.workingStyleValue.textContent = "-";
-    elements.responsibilityCount.textContent = "0";
-    elements.requirementsCount.textContent = "0";
-    renderList(elements.responsibilitiesList, []);
-    renderList(elements.requirementsList, []);
-    renderTags(elements.keywordsList, []);
-    renderTags(elements.stakeholdersList, []);
-    renderList(elements.questionsList, []);
-    renderList(elements.talkingPointsList, []);
-    elements.jsonOutput.textContent = "{}";
+    resetAnalysis();
     return;
   }
 
@@ -380,7 +660,7 @@ function runAnalysis() {
 async function copyJson() {
   try {
     await navigator.clipboard.writeText(elements.jsonOutput.textContent);
-    elements.statusText.textContent = "JSON copied to clipboard";
+    elements.statusText.textContent = "Structured JSON copied to clipboard";
   } catch (error) {
     elements.statusText.textContent = "Clipboard copy failed in this browser";
   }
