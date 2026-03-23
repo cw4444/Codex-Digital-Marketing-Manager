@@ -32,6 +32,14 @@ Understanding of SEO, PPC and CRM
 Proven project management skills
 A desire to learn and build on existing skills and knowledge`;
 
+const SAMPLE_CV = `Digital marketing manager with 5 years of experience across ecommerce, PPC landing pages, SEO collaboration, CRO, and digital merchandising.
+
+Worked with product, development, content, analytics, and UX teams to improve online journeys and increase conversion.
+
+Comfortable using GA4, Looker Studio, Excel, CMS platforms, briefing requirements, writing user stories, prioritising tests, and reporting against KPIs.
+
+Managed campaign launches, category pages, and trading updates for retail sites while balancing stakeholder requests and performance goals.`;
+
 const KEYWORD_HINTS = [
   "digital marketing",
   "web optimisation",
@@ -129,10 +137,12 @@ const REQUIREMENT_TRIGGERS = [
 
 const elements = {
   jobSpecInput: document.getElementById("jobSpecInput"),
+  cvInput: document.getElementById("cvInput"),
   analyzeBtn: document.getElementById("analyzeBtn"),
   clearBtn: document.getElementById("clearBtn"),
   copyJsonBtn: document.getElementById("copyJsonBtn"),
   wordCount: document.getElementById("wordCount"),
+  cvWordCount: document.getElementById("cvWordCount"),
   statusText: document.getElementById("statusText"),
   roleTitle: document.getElementById("roleTitle"),
   roleMeta: document.getElementById("roleMeta"),
@@ -146,6 +156,7 @@ const elements = {
   balanceValue: document.getElementById("balanceValue"),
   transparencyValue: document.getElementById("transparencyValue"),
   candidateValue: document.getElementById("candidateValue"),
+  matchValue: document.getElementById("matchValue"),
   responsibilityCount: document.getElementById("responsibilityCount"),
   requirementsCount: document.getElementById("requirementsCount"),
   responsibilitiesList: document.getElementById("responsibilitiesList"),
@@ -153,9 +164,12 @@ const elements = {
   keywordsList: document.getElementById("keywordsList"),
   stakeholdersList: document.getElementById("stakeholdersList"),
   redFlagsList: document.getElementById("redFlagsList"),
+  suspicionList: document.getElementById("suspicionList"),
   greenFlagsList: document.getElementById("greenFlagsList"),
   leverageList: document.getElementById("leverageList"),
   pressureList: document.getElementById("pressureList"),
+  matchHighlightsList: document.getElementById("matchHighlightsList"),
+  matchGapsList: document.getElementById("matchGapsList"),
   summaryBody: document.getElementById("summaryBody"),
   jsonOutput: document.getElementById("jsonOutput"),
 };
@@ -311,7 +325,169 @@ function detectBuzzwords(text) {
   return unique(phrases.filter((phrase) => lower.includes(phrase)));
 }
 
-function scoreJobSpec({ salaryNumber, responsibilities, requirements, stakeholders, benefitsCount, experienceYears, text }) {
+function detectSuspicionTriggers(text, salaryNumber) {
+  const lower = text.toLowerCase();
+  const triggers = [];
+
+  if (/competitive salary/.test(lower) && !salaryNumber) {
+    triggers.push("It says \"competitive salary\" without naming a number, which usually means the salary loses every competition except secrecy.");
+  }
+
+  if (/(we('| a)?re a family|family feel|family culture)/.test(lower)) {
+    triggers.push("The ad uses family language, which often hints at boundary blur, guilt-based loyalty, or under-structured management.");
+  }
+
+  if (/(great culture|amazing culture|brilliant culture|fantastic culture)/.test(lower)) {
+    triggers.push("Culture is being sold hard in the copy, which gets more suspicious when concrete benefits are thin.");
+  }
+
+  if (/(fast-paced|wear many hats|hit the ground running|roll up your sleeves)/.test(lower)) {
+    triggers.push("The wording suggests immediate output and context switching, which can mean chaos is already normalised.");
+  }
+
+  if (/competitive salary/.test(lower) && /(family|culture)/.test(lower)) {
+    triggers.push("The classic combo is here: vague pay plus emotional/culture language doing reputational heavy lifting.");
+  }
+
+  return unique(triggers);
+}
+
+function tokenize(text) {
+  return unique(
+    text
+      .toLowerCase()
+      .match(/[a-z0-9][a-z0-9/+.-]*/g) || []
+  );
+}
+
+function extractCvSignals(cvText) {
+  const tokens = tokenize(cvText);
+  const phrases = [
+    "seo",
+    "ppc",
+    "crm",
+    "cro",
+    "analytics",
+    "ga4",
+    "looker",
+    "excel",
+    "cms",
+    "ux",
+    "product",
+    "development",
+    "stakeholder",
+    "user stories",
+    "kpis",
+    "landing pages",
+    "digital merchandising",
+    "campaigns",
+    "conversion",
+    "customer journeys",
+    "retail",
+  ];
+
+  const lower = cvText.toLowerCase();
+  return unique([
+    ...tokens,
+    ...phrases.filter((phrase) => lower.includes(phrase)),
+  ]);
+}
+
+function buildCvMatchAnalysis({ cvText, keywords, stakeholders, requirements, responsibilities, experienceYears }) {
+  if (!cvText.trim()) {
+    return {
+      score: null,
+      highlights: ["Paste a CV or rough experience summary to get a match score."],
+      gaps: ["No CV text provided yet."],
+      matchedTerms: [],
+    };
+  }
+
+  const cvSignals = extractCvSignals(cvText);
+  const jobSignals = unique([
+    ...keywords,
+    ...stakeholders,
+    ...requirements.flatMap((item) => tokenize(item)),
+    ...responsibilities.flatMap((item) => tokenize(item)),
+  ]).filter((item) => item.length > 2);
+
+  const meaningfulSignals = unique([
+    ...keywords,
+    ...stakeholders,
+    "seo",
+    "ppc",
+    "crm",
+    "cro",
+    "analytics",
+    "cms",
+    "ux",
+    "product",
+    "development",
+    "kpis",
+    "user stories",
+    "landing pages",
+    "customer journeys",
+    "project management",
+  ]).filter((signal) => jobSignals.some((jobSignal) => jobSignal.toLowerCase().includes(signal.toLowerCase()) || signal.toLowerCase().includes(jobSignal.toLowerCase())));
+
+  const matchedTerms = meaningfulSignals.filter((signal) =>
+    cvSignals.some((cvSignal) => cvSignal.toLowerCase().includes(signal.toLowerCase()) || signal.toLowerCase().includes(cvSignal.toLowerCase()))
+  );
+
+  const missingTerms = meaningfulSignals.filter((signal) => !matchedTerms.includes(signal));
+  let score = 35;
+  score += Math.min(45, matchedTerms.length * 7);
+
+  if (experienceYears) {
+    const cvYearsMatch = cvText.match(/(\d+)\s*\+?\s+years?/i);
+    if (cvYearsMatch) {
+      const cvYears = Number(cvYearsMatch[1]);
+      score += cvYears >= experienceYears ? 15 : Math.max(0, 15 - (experienceYears - cvYears) * 5);
+    }
+  }
+
+  score = Math.max(0, Math.min(100, score));
+
+  const highlights = [];
+  const gaps = [];
+
+  if (matchedTerms.length) {
+    highlights.push(`Your background overlaps with ${matchedTerms.slice(0, 6).join(", ")}.`);
+  }
+
+  if (/stakeholder|cross-functional|product|development|ux/i.test(cvText) && stakeholders.length >= 4) {
+    highlights.push("Your CV suggests cross-functional work, which helps for stakeholder-heavy ads like this.");
+  }
+
+  if (/kpi|analytics|ga4|looker|data/i.test(cvText)) {
+    highlights.push("The data and measurement side looks covered, which matters because this ad leans on performance language.");
+  }
+
+  if (!highlights.length) {
+    highlights.push("The match is not obviously weak, but the CV text needs more direct overlap with the language used in the ad.");
+  }
+
+  if (missingTerms.length) {
+    gaps.push(`The ad asks for signals you do not clearly evidence yet: ${missingTerms.slice(0, 6).join(", ")}.`);
+  }
+
+  if (experienceYears && !/years?/i.test(cvText)) {
+    gaps.push("Your CV text does not state years of experience, so the match score cannot defend you against the experience filter.");
+  }
+
+  if (!gaps.length) {
+    gaps.push("No major gaps were obvious from the pasted CV text.");
+  }
+
+  return {
+    score,
+    highlights,
+    gaps,
+    matchedTerms,
+  };
+}
+
+function scoreJobSpec({ salaryNumber, responsibilities, requirements, stakeholders, benefitsCount, experienceYears, text, suspicionTriggers }) {
   let score = 60;
   const redFlags = [];
   const greenFlags = [];
@@ -378,6 +554,11 @@ function scoreJobSpec({ salaryNumber, responsibilities, requirements, stakeholde
   if (/self-starter|hard-working|self-motivated|autonomous quickly/i.test(text)) {
     score -= 6;
     redFlags.push("The ad leans on resilience buzzwords, which can be code for thin support or unclear onboarding.");
+  }
+
+  if (suspicionTriggers.length >= 2) {
+    score -= 8;
+    redFlags.push("Several classic coping phrases show up in the copy, so the employer brand may be doing too much of the compensation work.");
   }
 
   score = Math.max(0, Math.min(100, score));
@@ -492,6 +673,7 @@ function analyzeSpec(text) {
   const workingStyle = extractWorkingStyle(normalizedText);
   const benefitsCount = countBenefits(normalizedText);
   const buzzwords = detectBuzzwords(normalizedText);
+  const suspicionTriggers = detectSuspicionTriggers(normalizedText, salaryNumber);
   const scoring = scoreJobSpec({
     salaryNumber,
     responsibilities,
@@ -500,6 +682,7 @@ function analyzeSpec(text) {
     benefitsCount,
     experienceYears,
     text: normalizedText,
+    suspicionTriggers,
   });
   const verdict = buildVerdict(scoring.score);
 
@@ -520,6 +703,7 @@ function analyzeSpec(text) {
     keywords,
     stakeholders,
     buzzwords,
+    suspicionTriggers,
     benefitsCount,
     verdict,
     scores: {
@@ -585,11 +769,14 @@ function renderTags(container, items) {
 
 function updateWordCount() {
   const words = elements.jobSpecInput.value.trim().split(/\s+/).filter(Boolean);
+  const cvWords = elements.cvInput.value.trim().split(/\s+/).filter(Boolean);
   elements.wordCount.textContent = String(words.length);
+  elements.cvWordCount.textContent = String(cvWords.length);
 }
 
-function renderAnalysis(analysis) {
-  elements.statusText.textContent = `Ran UK job ad audit on ${analysis.sourceStats.words} words`;
+function renderAnalysis(analysis, cvMatch) {
+  const matchText = cvMatch.score == null ? "without CV match" : `with CV match ${cvMatch.score}/100`;
+  elements.statusText.textContent = `Ran UK job ad audit on ${analysis.sourceStats.words} words ${matchText}`;
   elements.roleTitle.textContent = analysis.roleTitle;
   elements.roleMeta.textContent = `${analysis.sourceStats.lines} meaningful lines detected`;
   elements.salaryValue.textContent = analysis.salary;
@@ -602,6 +789,7 @@ function renderAnalysis(analysis) {
   elements.balanceValue.textContent = `${analysis.scores.balance}/100`;
   elements.transparencyValue.textContent = `${analysis.scores.transparency}/100`;
   elements.candidateValue.textContent = `${analysis.scores.candidatePower}/100`;
+  elements.matchValue.textContent = cvMatch.score == null ? "-" : `${cvMatch.score}/100`;
   elements.responsibilityCount.textContent = String(analysis.responsibilities.length);
   elements.requirementsCount.textContent = String(analysis.requirements.length);
 
@@ -610,11 +798,14 @@ function renderAnalysis(analysis) {
   renderTags(elements.keywordsList, analysis.keywords);
   renderTags(elements.stakeholdersList, analysis.stakeholders);
   renderList(elements.redFlagsList, analysis.redFlags, "No big red flags were detected.");
+  renderList(elements.suspicionList, analysis.suspicionTriggers, "No classic suspicion phrases were detected.");
   renderList(elements.greenFlagsList, analysis.greenFlags, "No standout positives were detected.");
   renderList(elements.leverageList, analysis.leveragePoints);
   renderList(elements.pressureList, analysis.pressurePoints);
+  renderList(elements.matchHighlightsList, cvMatch.highlights);
+  renderList(elements.matchGapsList, cvMatch.gaps);
   elements.summaryBody.textContent = analysis.plainEnglishSummary;
-  elements.jsonOutput.textContent = JSON.stringify(analysis, null, 2);
+  elements.jsonOutput.textContent = JSON.stringify({ analysis, cvMatch }, null, 2);
 }
 
 function resetAnalysis() {
@@ -631,6 +822,7 @@ function resetAnalysis() {
   elements.balanceValue.textContent = "-";
   elements.transparencyValue.textContent = "-";
   elements.candidateValue.textContent = "-";
+  elements.matchValue.textContent = "-";
   elements.responsibilityCount.textContent = "0";
   elements.requirementsCount.textContent = "0";
   elements.summaryBody.textContent = "Nothing to summarize yet.";
@@ -639,14 +831,18 @@ function resetAnalysis() {
   renderTags(elements.keywordsList, []);
   renderTags(elements.stakeholdersList, []);
   renderList(elements.redFlagsList, []);
+  renderList(elements.suspicionList, []);
   renderList(elements.greenFlagsList, []);
   renderList(elements.leverageList, []);
   renderList(elements.pressureList, []);
+  renderList(elements.matchHighlightsList, []);
+  renderList(elements.matchGapsList, []);
   elements.jsonOutput.textContent = "{}";
 }
 
 function runAnalysis() {
   const text = elements.jobSpecInput.value.trim();
+  const cvText = elements.cvInput.value.trim();
   updateWordCount();
 
   if (!text) {
@@ -654,7 +850,17 @@ function runAnalysis() {
     return;
   }
 
-  renderAnalysis(analyzeSpec(text));
+  const analysis = analyzeSpec(text);
+  const cvMatch = buildCvMatchAnalysis({
+    cvText,
+    keywords: analysis.keywords,
+    stakeholders: analysis.stakeholders,
+    requirements: analysis.requirements,
+    responsibilities: analysis.responsibilities,
+    experienceYears: analysis.experienceYears,
+  });
+
+  renderAnalysis(analysis, cvMatch);
 }
 
 async function copyJson() {
@@ -667,10 +873,13 @@ async function copyJson() {
 }
 
 elements.jobSpecInput.value = SAMPLE_SPEC;
+elements.cvInput.value = SAMPLE_CV;
 elements.jobSpecInput.addEventListener("input", updateWordCount);
+elements.cvInput.addEventListener("input", updateWordCount);
 elements.analyzeBtn.addEventListener("click", runAnalysis);
 elements.clearBtn.addEventListener("click", () => {
   elements.jobSpecInput.value = "";
+  elements.cvInput.value = "";
   runAnalysis();
 });
 elements.copyJsonBtn.addEventListener("click", copyJson);

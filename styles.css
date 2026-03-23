@@ -204,15 +204,23 @@ pre {
   font-weight: 600;
 }
 
+.secondary-label {
+  margin-top: 18px;
+}
+
 textarea {
   width: 100%;
-  min-height: 620px;
+  min-height: 380px;
   resize: vertical;
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   background: rgba(255, 255, 255, 0.56);
   padding: 18px;
   color: var(--ink);
+}
+
+.cv-input {
+  min-height: 240px;
 }
 
 .stat-pill,
@@ -225,6 +233,12 @@ textarea {
   padding: 8px 12px;
   background: rgba(31, 36, 48, 0.06);
   color: var(--muted);
+}
+
+.stat-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .stat-value,
@@ -266,7 +280,7 @@ textarea {
 }
 
 .score-strip {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   margin-bottom: 18px;
 }
 

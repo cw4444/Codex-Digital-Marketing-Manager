@@ -33,10 +33,10 @@
           <div class="panel-heading">
             <div>
               <p class="panel-label">Input</p>
-              <h2>Job ad text</h2>
+              <h2>Job ad and CV</h2>
             </div>
             <div class="panel-actions">
-              <button id="analyzeBtn" class="button button-primary">Audit ad</button>
+              <button id="analyzeBtn" class="button button-primary">Audit and match</button>
               <button id="clearBtn" class="button button-secondary">Clear</button>
             </div>
           </div>
@@ -44,10 +44,19 @@
           <label class="field-label" for="jobSpecInput">Paste the full job description</label>
           <textarea id="jobSpecInput" spellcheck="false"></textarea>
 
+          <label class="field-label secondary-label" for="cvInput">Paste your CV, profile, or rough experience notes</label>
+          <textarea id="cvInput" class="cv-input" spellcheck="false"></textarea>
+
           <div class="utility-row">
-            <div class="stat-pill">
-              <span class="stat-value" id="wordCount">0</span>
-              <span class="stat-label">words</span>
+            <div class="stat-row">
+              <div class="stat-pill">
+                <span class="stat-value" id="wordCount">0</span>
+                <span class="stat-label">job words</span>
+              </div>
+              <div class="stat-pill">
+                <span class="stat-value" id="cvWordCount">0</span>
+                <span class="stat-label">cv words</span>
+              </div>
             </div>
             <button id="copyJsonBtn" class="button button-ghost">Copy JSON</button>
           </div>
@@ -90,6 +99,10 @@
               <p class="metric-label">Candidate power</p>
               <p class="metric-value" id="candidateValue">-</p>
             </article>
+            <article class="metric-card">
+              <p class="metric-label">CV match</p>
+              <p class="metric-value" id="matchValue">-</p>
+            </article>
           </div>
 
           <div class="content-grid">
@@ -131,6 +144,13 @@
               <ul id="redFlagsList" class="bullet-list"></ul>
             </article>
 
+            <article class="content-card bad-card">
+              <div class="content-header">
+                <h3>Suspicion triggers</h3>
+              </div>
+              <ul id="suspicionList" class="bullet-list"></ul>
+            </article>
+
             <article class="content-card good-card">
               <div class="content-header">
                 <h3>Green flags</h3>
@@ -150,6 +170,20 @@
                 <h3>Pressure points</h3>
               </div>
               <ul id="pressureList" class="bullet-list"></ul>
+            </article>
+
+            <article class="content-card good-card">
+              <div class="content-header">
+                <h3>CV overlap</h3>
+              </div>
+              <ul id="matchHighlightsList" class="bullet-list"></ul>
+            </article>
+
+            <article class="content-card bad-card">
+              <div class="content-header">
+                <h3>Likely gaps</h3>
+              </div>
+              <ul id="matchGapsList" class="bullet-list"></ul>
             </article>
 
             <article class="content-card">
