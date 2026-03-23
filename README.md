@@ -8,6 +8,7 @@ JobSpec Studio is a lightweight browser app that audits UK job ads, flags suspic
 - scores the ad for balance, transparency, and candidate leverage
 - flags common red flags such as wide scope for weak pay, vague package details, and buzzword-heavy wording
 - treats phrases like `competitive salary`, `we're a family`, and culture-heavy fluff as suspicion triggers when the offer is vague
+- estimates how many jobs the ad effectively reads like, based on scope, stakeholder load, and mixed job-family signals
 - highlights green flags, stakeholder load, and likely pressure points
 - breaks the role into `AI-doable assist`, `needs human oversight`, and `looks like multiple jobs`
 - compares a pasted CV or profile summary against the ad and estimates overlap, likely gaps, and match strength

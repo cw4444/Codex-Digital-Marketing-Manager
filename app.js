@@ -187,6 +187,7 @@ const elements = {
   transparencyValue: document.getElementById("transparencyValue"),
   candidateValue: document.getElementById("candidateValue"),
   matchValue: document.getElementById("matchValue"),
+  teamEstimateValue: document.getElementById("teamEstimateValue"),
   responsibilityCount: document.getElementById("responsibilityCount"),
   requirementsCount: document.getElementById("requirementsCount"),
   responsibilitiesList: document.getElementById("responsibilitiesList"),
@@ -770,7 +771,20 @@ function classifyAutomationLoad(responsibilities, requirements, stakeholders) {
     aiAssist: uniqueAiAssist.length ? uniqueAiAssist : ["No obvious AI-assist bucket was detected, though first drafts and admin work are still likely automatable."],
     humanOversight: uniqueHumanOversight.length ? uniqueHumanOversight : ["No obvious human-critical signals were detected, but accountability and prioritisation still need a person."],
     teamLoad: overloadSummary.length ? overloadSummary : ["No obvious multi-role overload pattern was detected."],
+    jobFamilies: uniqueTeamLoad.length,
   };
+}
+
+function estimateTeamEquivalent({ responsibilities, stakeholders, requirements, automationLoad }) {
+  let estimate = 1;
+
+  estimate += Math.min(2.2, responsibilities.length * 0.12);
+  estimate += Math.min(0.8, requirements.length * 0.05);
+  estimate += Math.min(0.9, stakeholders.length * 0.06);
+  estimate += Math.min(1.6, automationLoad.jobFamilies * 0.28);
+
+  const rounded = Math.round(estimate * 2) / 2;
+  return Math.max(1, rounded);
 }
 
 function splitHallEntries(text) {
@@ -888,6 +902,12 @@ function analyzeSpec(text) {
   const buzzwords = detectBuzzwords(normalizedText);
   const suspicionTriggers = detectSuspicionTriggers(normalizedText, salaryNumber);
   const automationLoad = classifyAutomationLoad(responsibilities, requirements, stakeholders);
+  const teamEquivalent = estimateTeamEquivalent({
+    responsibilities,
+    stakeholders,
+    requirements,
+    automationLoad,
+  });
   const scoring = scoreJobSpec({
     salaryNumber,
     responsibilities,
@@ -938,6 +958,7 @@ function analyzeSpec(text) {
     }),
     pressurePoints: buildPressurePoints(responsibilities, stakeholders, buzzwords),
     automationLoad,
+    teamEquivalent,
     sourceStats: {
       lines: lines.length,
       words: normalizedText.split(/\s+/).filter(Boolean).length,
@@ -1048,6 +1069,7 @@ function renderAnalysis(analysis, cvMatch) {
   elements.transparencyValue.textContent = `${analysis.scores.transparency}/100`;
   elements.candidateValue.textContent = `${analysis.scores.candidatePower}/100`;
   elements.matchValue.textContent = cvMatch.score == null ? "-" : `${cvMatch.score}/100`;
+  elements.teamEstimateValue.textContent = `${analysis.teamEquivalent} jobs`;
   elements.responsibilityCount.textContent = String(analysis.responsibilities.length);
   elements.requirementsCount.textContent = String(analysis.requirements.length);
 
@@ -1084,6 +1106,7 @@ function resetAnalysis() {
   elements.transparencyValue.textContent = "-";
   elements.candidateValue.textContent = "-";
   elements.matchValue.textContent = "-";
+  elements.teamEstimateValue.textContent = "-";
   elements.responsibilityCount.textContent = "0";
   elements.requirementsCount.textContent = "0";
   elements.summaryBody.textContent = "Nothing to summarize yet.";
