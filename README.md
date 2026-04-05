@@ -27,8 +27,3 @@ No install step is required.
 
 Paste multiple ads into the Hall of Shame box and separate each one with a line that contains only `---`.
 
-## License
-
-This project is proprietary. You may not use, copy, modify, redistribute, deploy, or install it for commercial or client use without prior written permission.
-
-Commercial licenses are available. For business use, professional installation, or deployment enquiries, contact me
