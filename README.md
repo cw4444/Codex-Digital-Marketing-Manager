@@ -1,4 +1,4 @@
-# Codex-Digital-Marketing-Manager
+# Digital Marketing Manager
 
 JobSpec Studio is a lightweight browser app that audits UK job ads, flags suspicious wording, compares them against a pasted CV, and can rank multiple ads in a Hall of Shame leaderboard.
 
